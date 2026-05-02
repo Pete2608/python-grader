@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}รายการโจทย์{% endblock %}
+
+{% block content %}
+
+<div class="page-container">
+
+    <div class="page-header">
+        <h2>📚 รายการโจทย์ Python</h2>
+        <p>เลือกโจทย์เพื่อเริ่มฝึกเขียนโปรแกรม</p>
+    </div>
+
+    <div class="problems-grid">
+
+        {% for problem in problems %}
+        <a href="{{ url_for('problem', problem_id=problem['id']) }}" class="problem-card">
+
+            <div class="problem-card-header">
+                <span class="problem-number">#{{ loop.index }}</span>
+                <span class="problem-category">{{ problem['category'] }}</span>
+
+                {% if problem['difficulty'] == 'easy' %}
+                <span class="badge badge-easy">ง่าย</span>
+                {% elif problem['difficulty'] == 'medium' %}
+                <span class="badge badge-medium">ปานกลาง</span>
+                {% else %}
+                <span class="badge badge-hard">ยาก</span>
+                {% endif %}
+            </div>
+
+            <h3 class="problem-title">{{ problem['title'] }}</h3>
+
+            <p class="problem-preview">
+                {{ problem['description'][:80] }}{% if problem['description']|length > 80 %}...{% endif %}
+            </p>
+
+        </a>
+
+        {% else %}
+        {# {% else %} ของ for loop — แสดงถ้า list ว่างเปล่า #}
+        <div class="empty-state">
+            <p>ยังไม่มีโจทย์ในระบบ</p>
+        </div>
+        {% endfor %}
+
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}เข้าสู่ระบบ{% endblock %}
+
+{% block content %}
+
+<div class="auth-container">
+
+    {% if register %}
+    <!-- ============ ฟอร์มสมัครสมาชิก ============ -->
+    <div class="auth-card">
+        <div class="auth-header">
+            <h1>🐍 PyLearn</h1>
+            <p>สร้างบัญชีใหม่</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('register') }}" class="auth-form">
+            <div class="form-group">
+                <label for="username">ชื่อผู้ใช้</label>
+                <input type="text" id="username" name="username" placeholder="ตั้งชื่อผู้ใช้" required autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label for="password">รหัสผ่าน</label>
+                <input type="password" id="password" name="password" placeholder="ตั้งรหัสผ่าน" required>
+            </div>
+            <button type="submit" class="btn-primary btn-full">สมัครสมาชิก</button>
+        </form>
+
+        <p class="auth-switch">
+            มีบัญชีแล้ว? <a href="{{ url_for('login') }}">เข้าสู่ระบบ</a>
+        </p>
+    </div>
+
+    {% else %}
+    <!-- ============ ฟอร์ม Login ============ -->
+    <div class="auth-card">
+        <div class="auth-header">
+            <h1>🐍 PyLearn</h1>
+            <p>เข้าสู่ระบบเพื่อเริ่มฝึกเขียนโปรแกรม</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('login') }}" class="auth-form">
+            <div class="form-group">
+                <label for="username">ชื่อผู้ใช้</label>
+                <input type="text" id="username" name="username" placeholder="กรอกชื่อผู้ใช้" required autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label for="password">รหัสผ่าน</label>
+                <input type="password" id="password" name="password" placeholder="กรอกรหัสผ่าน" required>
+            </div>
+            <button type="submit" class="btn-primary btn-full">เข้าสู่ระบบ</button>
+        </form>
+
+        <p class="auth-switch">
+            ยังไม่มีบัญชี? <a href="{{ url_for('register') }}">สมัครสมาชิก</a>
+        </p>
+    </div>
+    {% endif %}
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+{% endblock %}

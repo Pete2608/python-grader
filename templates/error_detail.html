@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}รายละเอียด {{ error['error_type'] }}{% endblock %}
+
+{% block content %}
+
+<div class="page-container">
+
+    <!-- Back button -->
+    <a href="{{ url_for('dashboard') }}" class="back-link">← กลับ Dashboard</a>
+
+    <div class="error-detail-page">
+
+        <!--
+            ====================================================
+            คอลัมน์ซ้าย — คำอธิบาย Error Type
+            explanation ส่งมาจาก app.py เป็น dict
+            ที่มีคำอธิบายภาษาไทยของแต่ละ Error Type
+            ====================================================
+        -->
+        <div class="error-explain-card">
+
+            <!-- หัวข้อ Error -->
+            <div class="error-explain-header">
+                <span class="error-type-big">{{ error['error_type'] }}</span>
+                <h2>{{ explanation['title'] }}</h2>
+                <p class="error-time">🕐 {{ error['logged_at'] }}</p>
+                <p class="error-problem">
+                    📝 โจทย์:
+                    <a href="{{ url_for('problem', problem_id=error['problem_id']) }}">
+                        {{ error['problem_title'] }}
+                    </a>
+                </p>
+            </div>
+
+            <!-- คำอธิบาย -->
+            <div class="error-explain-body">
+                <h3>❓ เกิดจากอะไร?</h3>
+                <p>{{ explanation['desc'] }}</p>
+            </div>
+
+            <!-- Tips แก้ไข -->
+            <div class="error-tips">
+                <h3>💡 วิธีแก้ไข</h3>
+                <ul>
+                    {% for tip in explanation['tips'] %}
+                    <li>{{ tip }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Error Message จริง -->
+            <div class="error-raw">
+                <h3>📋 Error Message</h3>
+                {% if error['error_line'] %}
+                <p class="error-line-info">บรรทัดที่เกิด error: <strong>{{ error['error_line'] }}</strong></p>
+                {% endif %}
+                <pre class="error-message-box">{{ error['error_message'] }}</pre>
+            </div>
+
+        </div>
+
+        <!--
+            ====================================================
+            คอลัมน์ขวา — โค้ดที่ส่งครั้งนั้น
+            submitted_code คือโค้ดที่ดึงมาจาก submissions
+            ผ่าน JOIN ใน app.py
+            ====================================================
+        -->
+        <div class="error-code-card">
+            <div class="error-code-header">
+                <h3>🐍 โค้ดที่ส่ง</h3>
+                <span class="badge badge-error-type">{{ error['error_type'] }}</span>
+            </div>
+
+            <!--
+                แสดงโค้ดด้วย CodeMirror แบบ read-only
+                ผู้เรียนดูได้แต่แก้ไม่ได้
+            -->
+            <textarea id="code-viewer" readonly>{{ error['submitted_code'] }}</textarea>
+
+            <!-- ปุ่มไปแก้โค้ด — ลิงก์ไปหน้าโจทย์นั้น -->
+            <a href="{{ url_for('problem', problem_id=error['problem_id']) }}"
+               class="btn-primary btn-go-fix">
+                ✏️ ไปแก้โค้ด
+            </a>
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // เปิด CodeMirror แบบ read-only สำหรับแสดงโค้ด
+    var viewer = CodeMirror.fromTextArea(
+        document.getElementById("code-viewer"),
+        {
+            mode:        "python",
+            theme:       "dracula",
+            lineNumbers: true,
+            readOnly:    true,      // ← read-only ดูได้อย่างเดียว
+            lineWrapping: true
+        }
+    );
+
+    // ปรับความสูงให้พอดีกับเนื้อหา
+    viewer.setSize(null, "100%");
+</script>
+{% endblock %}

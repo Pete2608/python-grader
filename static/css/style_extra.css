@@ -1,0 +1,247 @@
+/* ================================================
+   style_extra.css
+   CSS เพิ่มเติมสำหรับ 3 ฟีเจอร์ใหม่
+   ให้ paste ต่อท้าย style.css เดิม
+   ================================================ */
+
+/* ── chart subtitle ──────────────────────────── */
+.chart-subtitle {
+    color:       var(--text-secondary);
+    font-size:   0.85rem;
+    margin-top:  -0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+/* ── Error History List ──────────────────────── */
+.error-history-list {
+    display:        flex;
+    flex-direction: column;
+    gap:            0.75rem;
+}
+
+.error-history-item {
+    display:         flex;
+    align-items:     center;
+    justify-content: space-between;
+    background:      var(--bg-primary);
+    border:          1px solid var(--border);
+    border-radius:   10px;
+    padding:         0.85rem 1.25rem;
+    transition:      border-color 0.2s;
+}
+.error-history-item:hover {
+    border-color: var(--accent);
+}
+
+.error-history-left {
+    display:     flex;
+    align-items: center;
+    gap:         0.75rem;
+}
+
+.error-history-info {
+    display:        flex;
+    flex-direction: column;
+    gap:            0.15rem;
+}
+
+.error-history-problem {
+    font-size:   0.9rem;
+    font-weight: 500;
+    color:       var(--text-primary);
+}
+
+.error-history-time {
+    font-size: 0.78rem;
+    color:     var(--text-muted);
+}
+
+.btn-see-detail {
+    font-size:     0.82rem;
+    color:         var(--accent);
+    border:        1px solid var(--accent);
+    padding:       0.3rem 0.85rem;
+    border-radius: 8px;
+    white-space:   nowrap;
+    transition:    all 0.2s;
+}
+.btn-see-detail:hover {
+    background: var(--accent);
+    color:      white;
+}
+
+/* ── Error Detail Page ───────────────────────── */
+.error-detail-page {
+    display:               grid;
+    grid-template-columns: 1fr 1fr;
+    gap:                   1.5rem;
+    margin-top:            1.5rem;
+}
+
+/* การ์ดคำอธิบาย Error */
+.error-explain-card {
+    background:    var(--bg-card);
+    border:        1px solid var(--border);
+    border-radius: var(--radius);
+    padding:       1.75rem;
+    display:       flex;
+    flex-direction: column;
+    gap:           1.5rem;
+}
+
+.error-explain-header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1.25rem;
+}
+
+.error-type-big {
+    display:       inline-block;
+    font-family:   var(--font-code);
+    font-size:     0.85rem;
+    background:    #1c0a0a;
+    color:         #fca5a5;
+    padding:       0.3rem 0.85rem;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+}
+
+.error-explain-header h2 {
+    font-size:   1.35rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.error-time    { font-size: 0.82rem; color: var(--text-muted); }
+.error-problem { font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem; }
+
+.error-explain-body h3,
+.error-tips h3,
+.error-raw h3 {
+    font-size:     0.9rem;
+    color:         var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.75rem;
+}
+
+.error-explain-body p {
+    font-size:   0.9rem;
+    line-height: 1.7;
+    color:       var(--text-primary);
+}
+
+.error-tips ul {
+    list-style:  none;
+    display:     flex;
+    flex-direction: column;
+    gap:         0.6rem;
+}
+
+.error-tips li {
+    font-size:   0.88rem;
+    padding-left: 1rem;
+    position:    relative;
+    line-height: 1.6;
+}
+
+.error-tips li::before {
+    content:  '→';
+    position: absolute;
+    left:     0;
+    color:    var(--accent);
+}
+
+.error-line-info {
+    font-size:     0.85rem;
+    color:         var(--text-secondary);
+    margin-bottom: 0.6rem;
+}
+
+.error-message-box {
+    font-family:  var(--font-code);
+    font-size:    0.8rem;
+    background:   var(--bg-primary);
+    border:       1px solid #7f1d1d;
+    border-radius: 8px;
+    padding:      1rem;
+    color:        #fca5a5;
+    white-space:  pre-wrap;
+    overflow-x:   auto;
+    line-height:  1.6;
+}
+
+/* การ์ดแสดงโค้ด */
+.error-code-card {
+    background:    var(--bg-card);
+    border:        1px solid var(--border);
+    border-radius: var(--radius);
+    padding:       1.75rem;
+    display:       flex;
+    flex-direction: column;
+    gap:           1rem;
+}
+
+.error-code-header {
+    display:         flex;
+    align-items:     center;
+    justify-content: space-between;
+}
+
+.error-code-header h3 {
+    font-size:  1rem;
+    font-weight: 600;
+}
+
+.badge-error-type {
+    font-family:  var(--font-code);
+    font-size:    0.75rem;
+    background:   #1c0a0a;
+    color:        #fca5a5;
+    padding:      0.2rem 0.6rem;
+    border-radius: 6px;
+}
+
+.btn-go-fix {
+    display:     block;
+    text-align:  center;
+    margin-top:  0.5rem;
+}
+
+/* AST Warning Box ─────────────────────────────── */
+/* เพิ่มใน problem.html ถ้ามี ast_warnings */
+.ast-warnings {
+    background:    #1c1407;
+    border:        1px solid #78350f;
+    border-radius: 10px;
+    padding:       1rem 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.ast-warnings h4 {
+    font-size:     0.85rem;
+    color:         #fcd34d;
+    margin-bottom: 0.6rem;
+}
+
+.ast-warnings ul {
+    list-style:  none;
+    display:     flex;
+    flex-direction: column;
+    gap:         0.4rem;
+}
+
+.ast-warnings li {
+    font-size: 0.85rem;
+    color:     #fde68a;
+}
+
+/* Responsive ─────────────────────────────────── */
+@media (max-width: 768px) {
+    .error-detail-page {
+        grid-template-columns: 1fr;
+    }
+    .problem-page {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+}

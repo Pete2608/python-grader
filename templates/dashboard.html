@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<div class="page-container">
+
+    <!-- Header -->
+    <div class="page-header">
+        <h2>📊 Dashboard ของ {{ username }}</h2>
+        <p>ติดตามพัฒนาการการเขียนโปรแกรมของคุณ</p>
+    </div>
+
+    <!--
+        ====================================================
+        การ์ดสถิติ 3 ใบ
+        total, passed, failed ส่งมาจาก app.py
+        ====================================================
+    -->
+    <div class="stats-grid">
+
+        <div class="stat-card stat-total">
+            <div class="stat-icon">📤</div>
+            <div class="stat-number">{{ total }}</div>
+            <div class="stat-label">ส่งทั้งหมด</div>
+        </div>
+
+        <div class="stat-card stat-passed">
+            <div class="stat-icon">✅</div>
+            <div class="stat-number">{{ passed }}</div>
+            <div class="stat-label">ผ่าน</div>
+        </div>
+
+        <div class="stat-card stat-failed">
+            <div class="stat-icon">❌</div>
+            <div class="stat-number">{{ failed }}</div>
+            <div class="stat-label">ไม่ผ่าน / Error</div>
+        </div>
+
+    </div>
+
+    <!--
+        ====================================================
+        คำนวณ PDI แสดงเป็น Progress Bar
+        PDI = passed / total (ถ้า total > 0)
+        ====================================================
+    -->
+    <div class="pdi-container">
+        <div class="pdi-header">
+            <h3>Programming Development Index (PDI)</h3>
+            <p>วัดระดับพัฒนาการการเขียนโปรแกรมของคุณ (0 – 1.00)</p>
+        </div>
+
+        <!--
+            คำนวณ PDI ใน Jinja2
+            ต้องเช็ค total > 0 ก่อน ไม่งั้นหารศูนย์จะ error
+        -->
+        {% if total > 0 %}
+        {% set pdi = (passed / total * 100) | round(1) %}
+        {% else %}
+        {% set pdi = 0 %}
+        {% endif %}
+
+        <div class="pdi-bar-container">
+            <div class="pdi-bar">
+                <!-- width ของ bar ขึ้นอยู่กับค่า pdi -->
+                <div class="pdi-fill" style="width: {{ pdi }}%"></div>
+            </div>
+            <span class="pdi-value">{{ pdi }}%</span>
+        </div>
+
+        <div class="pdi-level">
+            {% if pdi >= 80 %}
+            <span class="level-badge level-excellent">🏆 ยอดเยี่ยม</span>
+            {% elif pdi >= 60 %}
+            <span class="level-badge level-good">⭐ ดี</span>
+            {% elif pdi >= 40 %}
+            <span class="level-badge level-fair">📈 กำลังพัฒนา</span>
+            {% else %}
+            <span class="level-badge level-begin">🌱 เริ่มต้น</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!--
+        ====================================================
+        PDI Timeline ← ใหม่
+        กราฟเส้นแสดงพัฒนาการ PDI ทุกครั้งที่ส่งโค้ด
+        แสดงเฉพาะเมื่อมี submission มากกว่า 1 ครั้ง
+        ====================================================
+    -->
+    {% if pdi_timeline | length > 1 %}
+    <div class="chart-container">
+        <h3>📈 พัฒนาการ PDI ตามเวลา</h3>
+        <p class="chart-subtitle">กราฟแสดงการเปลี่ยนแปลงของ PDI ทุกครั้งที่ส่งโค้ด</p>
+        <div class="chart-wrapper">
+            <canvas id="pdiTimelineChart"></canvas>
+        </div>
+    </div>
+    {% endif %}
+
+    <!--
+        ====================================================
+        กราฟ Error Frequency — หัวใจสำคัญของโปรเจค
+        แสดงว่าเกิด Error ประเภทไหนบ่อยที่สุด
+        ====================================================
+    -->
+    <div class="chart-container">
+        <h3>🔍 ความถี่ของข้อผิดพลาดแต่ละประเภท</h3>
+
+        {% if errors %}
+        <!-- มี Error data ให้แสดงกราฟ -->
+        <div class="chart-wrapper">
+            <canvas id="errorChart"></canvas>
+        </div>
+
+        <!-- ตารางรายละเอียด Error ด้านล่างกราฟ -->
+        <div class="error-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>อันดับ</th>
+                        <th>ประเภท Error</th>
+                        <th>จำนวนครั้ง</th>
+                        <th>สัดส่วน</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!--
+                        errors คือ list of rows จาก DB
+                        แต่ละ row มี error_type และ count
+                        ส่งมาจาก app.py ที่ query GROUP BY error_type
+                    -->
+                    {% set total_errors = errors | sum(attribute='count') %}
+                    <!--
+                        | sum(attribute='count') คือ Jinja2 filter
+                        รวมค่า count ของทุก row ใน list
+                    -->
+                    {% for error in errors %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>
+                            <span class="error-type-badge">{{ error['error_type'] }}</span>
+                        </td>
+                        <td>{{ error['count'] }} ครั้ง</td>
+                        <td>
+                            {% if total_errors > 0 %}
+                            {{ (error['count'] / total_errors * 100) | round(1) }}%
+                            {% else %}
+                            0%
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% else %}
+        <!-- ยังไม่มี Error เลย -->
+        <div class="empty-state">
+            <p>🎉 ยังไม่มีข้อผิดพลาด เริ่มทำโจทย์เพื่อดูสถิติ</p>
+            <a href="{{ url_for('problems') }}" class="btn-primary">ไปทำโจทย์</a>
+        </div>
+        {% endif %}
+
+    </div>
+
+</div>
+<!--
+        ====================================================
+        Error History ← ใหม่
+        10 รายการล่าสุด + ลิงก์ไป Error Detail
+        recent_errors ส่งมาจาก app.py ด้วย JOIN 2 ตาราง
+        ====================================================
+    -->
+{% if recent_errors %}
+<div class="chart-container">
+    <h3>📜 ประวัติข้อผิดพลาดล่าสุด</h3>
+    <p class="chart-subtitle">10 รายการล่าสุด — กดดูรายละเอียดเพื่อเรียนรู้วิธีแก้ไข</p>
+
+    <div class="error-history-list">
+        {% for err in recent_errors %}
+        <div class="error-history-item">
+            <div class="error-history-left">
+                <span class="error-type-badge">{{ err['error_type'] }}</span>
+                <div class="error-history-info">
+                    <span class="error-history-problem">{{ err['problem_title'] }}</span>
+                    <span class="error-history-time">{{ err['logged_at'] }}</span>
+                </div>
+            </div>
+            <!--
+                    url_for('error_detail', error_id=err['id'])
+                    สร้าง URL เช่น /error/5 เพื่อไปหน้า Error Detail
+                -->
+            <a href="{{ url_for('error_detail', error_id=err['id']) }}" class="btn-see-detail">
+                ดูรายละเอียด →
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // ── PDI Timeline Line Chart ──────────────────────────
+    {% if pdi_timeline | length > 1 %}
+    var timelineLabels = {{ pdi_timeline | map(attribute = 'label') | list | tojson }};
+    var timelineData = {{ pdi_timeline | map(attribute = 'pdi') | list | tojson }};
+
+    var ctxLine = document.getElementById('pdiTimelineChart').getContext('2d');
+    new Chart(ctxLine, {
+        type: 'line',
+        data: {
+            labels: timelineLabels,
+            datasets: [{
+                label: 'PDI (%)',
+                data: timelineData,
+                borderColor: 'rgba(99, 102, 241, 1)',
+                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                borderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                fill: true,
+                tension: 0.3,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function (ctx) {
+                            return ' PDI: ' + ctx.raw + '%';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    min: 0, max: 100,
+                    ticks: { callback: function (v) { return v + '%'; } },
+                    grid: { color: 'rgba(255,255,255,0.05)' }
+                },
+                x: { grid: { color: 'rgba(255,255,255,0.05)' } }
+            }
+        }
+    });
+    {% endif %}
+
+    // ── Error Frequency Bar Chart ────────────────────────
+    {% if errors %}
+    var errorLabels = {{ errors | map(attribute = 'error_type') | list | tojson }};
+    var errorCounts = {{ errors | map(attribute = 'count') | list | tojson }};
+    var colors = [
+        'rgba(239, 68, 68, 0.8)',
+        'rgba(249, 115, 22, 0.8)',
+        'rgba(234, 179, 8, 0.8)',
+        'rgba(34, 197, 94, 0.8)',
+        'rgba(59, 130, 246, 0.8)',
+        'rgba(168, 85, 247, 0.8)',
+    ];
+    var ctxBar = document.getElementById('errorChart').getContext('2d');
+    new Chart(ctxBar, {
+        type: 'bar',
+        data: {
+            labels: errorLabels,
+            datasets: [{
+                label: 'จำนวนครั้ง',
+                data: errorCounts,
+                backgroundColor: colors.slice(0, errorLabels.length),
+                borderRadius: 8,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1 },
+                    grid: { color: 'rgba(255,255,255,0.05)' }
+                },
+                x: { grid: { color: 'rgba(255,255,255,0.05)' } }
+            }
+        }
+    });
+    {% endif %}
+</script>
+{% endblock %}

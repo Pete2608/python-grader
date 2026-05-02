@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}PyLearn{% endblock %} | ระบบฝึกเขียน Python</title>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style_extra.css') }}">
+
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="{{ url_for('problems') }}" class="navbar-brand">
+                🐍 PyLearn
+            </a>
+            {% if session.get('username') %}
+            <div class="navbar-menu">
+                <a href="{{ url_for('problems') }}"
+                    class="nav-link {% if request.endpoint == 'problems' %}active{% endif %}">โจทย์</a>
+                <a href="{{ url_for('dashboard') }}"
+                    class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">Dashboard</a>
+                <span class="navbar-username">👤 {{ session['username'] }}</span>
+                <a href="{{ url_for('logout') }}" class="btn-logout">ออกจากระบบ</a>
+            </div>
+            {% endif %}
+        </div>
+    </nav>
+
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <div class="flash-container">
+        {% for message in messages %}
+        <div class="flash-message">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <p>PyLearn — ระบบฝึกเขียนโปรแกรม Python พร้อมวิเคราะห์ข้อผิดพลาด</p>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>

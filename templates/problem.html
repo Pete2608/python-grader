@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}{{ problem['title'] }}{% endblock %}
+
+{% block content %}
+
+<div class="problem-page">
+
+    <!--
+        ====================================================
+        คอลัมน์ซ้าย — โจทย์และผลลัพธ์
+        ====================================================
+    -->
+    <div class="problem-left">
+
+        <!-- ชื่อโจทย์ -->
+        <div class="problem-detail-header">
+            <a href="{{ url_for('problems') }}" class="back-link">← กลับ</a>
+            <h2>{{ problem['title'] }}</h2>
+            <div class="problem-meta">
+                <span class="problem-category">{{ problem['category'] }}</span>
+                {% if problem['difficulty'] == 'easy' %}
+                <span class="badge badge-easy">ง่าย</span>
+                {% elif problem['difficulty'] == 'medium' %}
+                <span class="badge badge-medium">ปานกลาง</span>
+                {% else %}
+                <span class="badge badge-hard">ยาก</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- คำอธิบายโจทย์ -->
+        <div class="problem-description">
+            <!--
+                | nl2br คือ Jinja2 filter แปลง \n เป็น <br>
+                แต่ Flask ไม่มี nl2br built-in ต้องใช้ white-space: pre-wrap ใน CSS แทน
+            -->
+            <pre class="problem-text">{{ problem['description'] }}</pre>
+        </div>
+
+        <!--
+            ====================================================
+            แสดงผลลัพธ์หลัง Submit
+            result คือ dict ที่ app.py ส่งมาหลังตรวจโค้ด
+            ถ้ายังไม่ได้ Submit จะไม่มี result
+            ====================================================
+        -->
+        {% if result %}
+        <div class="result-container">
+
+            <!-- สถานะรวม -->
+            {% if result['status'] == 'passed' %}
+            <div class="result-status status-passed">
+                ✅ ผ่านทุก Test Case!
+            </div>
+            {% elif result['status'] == 'error' %}
+            <div class="result-status status-error">
+                ❌ เกิดข้อผิดพลาด: {{ result['error_type'] }}
+            </div>
+            {% else %}
+            <div class="result-status status-failed">
+                ⚠️ ไม่ผ่านบาง Test Case
+            </div>
+            {% endif %}
+
+            <!-- แสดง Error Message ถ้ามี -->
+            {% if result['error_message'] %}
+            <div class="error-box">
+                <h4>รายละเอียดข้อผิดพลาด:</h4>
+                <pre class="error-message">{{ result['error_message'] }}</pre>
+            </div>
+            {% endif %}
+
+            {% if result['ast_warnings'] %}
+            <div class="warning-box">
+                <h4>คำเตือน:</h4>
+                {% for w in result['ast_warnings'] %}
+                <p>⚠️ {{ w }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- ผลแต่ละ Test Case -->
+            <div class="test-results">
+                <h4>ผล Test Cases:</h4>
+                {% for tc in result['results'] %}
+                {% if not tc['hidden'] %}
+                <!--
+                        แสดงเฉพาะ test case ที่ไม่ได้ hidden
+                        is_hidden=1 คือ hidden จะไม่แสดงให้ผู้เรียนเห็น
+                    -->
+                <div class="test-case {% if tc['passed'] %}tc-passed{% else %}tc-failed{% endif %}">
+                    <div class="tc-header">
+                        {% if tc['passed'] %}✅{% else %}❌{% endif %}
+                        Test Case
+                    </div>
+                    {% if tc['input'] %}
+                    <div class="tc-row">
+                        <span class="tc-label">Input:</span>
+                        <code>{{ tc['input'] }}</code>
+                    </div>
+                    {% endif %}
+                    <div class="tc-row">
+                        <span class="tc-label">คาดหวัง:</span>
+                        <code>{{ tc['expected'] }}</code>
+                    </div>
+                    {% if not tc['passed'] %}
+                    <div class="tc-row">
+                        <span class="tc-label">ได้รับ:</span>
+                        <code class="tc-wrong">{{ tc['got'] }}</code>
+                    </div>
+                    {% endif %}
+                </div>
+                {% else %}
+                <!-- Hidden test case แสดงแค่ว่าผ่านหรือเปล่า -->
+                <div class="test-case {% if tc['passed'] %}tc-passed{% else %}tc-failed{% endif %}">
+                    {% if tc['passed'] %}✅{% else %}❌{% endif %}
+                    Hidden Test Case
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+
+        </div>
+        {% endif %}
+
+    </div>
+
+    <!--
+        ====================================================
+        คอลัมน์ขวา — Code Editor
+        ====================================================
+    -->
+    <div class="problem-right">
+
+        <div class="editor-container">
+            <div class="editor-header">
+                <span>🐍 Python</span>
+                <button onclick="clearEditor()" class="btn-clear">ล้าง</button>
+            </div>
+
+            <!--
+                form ส่ง POST ไปที่ /submit/<problem_id>
+                เมื่อกด Submit จะส่งโค้ดไปให้ grader.py ตรวจ
+            -->
+            <form method="POST" action="{{ url_for('submit', problem_id=problem['id']) }}" id="submit-form">
+
+                <!--
+                    textarea นี้จะถูก CodeMirror แปลงเป็น Code Editor
+                    name="code" คือชื่อที่ app.py ดึงด้วย request.form["code"]
+                    id="code-editor" ใช้ให้ JS เข้าถึง
+                -->
+                <textarea name="code" id="code-editor"
+                    placeholder="# เขียนโค้ด Python ที่นี่&#10;print('Hello World')">{% if submitted_code %}{{ submitted_code }}{% endif %}</textarea>
+                <!--
+                    submitted_code คือโค้ดที่ส่งมาครั้งล่าสุด
+                    ถ้ามีจะเติมกลับเข้าไปใน editor ให้ผู้เรียนแก้ต่อได้
+                -->
+
+                <button type="submit" class="btn-submit">
+                    ▶ ส่งคำตอบ
+                </button>
+
+            </form>
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+<!--
+    ====================================================
+    JavaScript พิเศษสำหรับหน้านี้
+    ใส่ใน block extra_js เพื่อโหลดหลัง base.html
+    ====================================================
+-->
+{% block extra_js %}
+<script>
+    // ─── เปิด CodeMirror Editor ───────────────────────
+    // แปลง textarea#code-editor เป็น Editor สวยๆ
+    var editor = CodeMirror.fromTextArea(
+        document.getElementById("code-editor"),
+        {
+            mode: "python",           // ภาษา Python
+            theme: "dracula",         // ธีมสีเข้ม
+            lineNumbers: true,        // แสดงเลขบรรทัด
+            indentUnit: 4,            // indent 4 spaces
+            smartIndent: true,        // indent อัตโนมัติ
+            tabSize: 4,
+            lineWrapping: true,       // ตัดบรรทัดอัตโนมัติ
+            autofocus: true           // focus ที่ editor ทันทีที่โหลด
+        }
+    );
+
+    // ─── ก่อน submit ต้องดึงโค้ดจาก CodeMirror ใส่ textarea ก่อน ───
+    // เพราะ CodeMirror แยก element ออกมา ค่าใน textarea จะไม่อัปเดตอัตโนมัติ
+    document.getElementById("submit-form").addEventListener("submit", function () {
+        editor.save(); // ดึงค่าจาก CodeMirror กลับลง textarea
+    });
+
+    // ─── ปุ่มล้าง Editor ───────────────────────────────
+    function clearEditor() {
+        editor.setValue("# เขียนโค้ดที่นี่\n");
+        editor.focus();
+    }
+</script>
+{% endblock %}
