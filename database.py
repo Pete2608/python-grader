@@ -1,85 +1,110 @@
-import sqlite3
+import pymysql
+from dotenv import load_dotenv
 import os
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "grader.db")
+# โหลดค่าจากไฟล์ .env
+load_dotenv()
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row  # ให้ดึงข้อมูลแบบ dict ได้
+    conn = pymysql.connect(
+        host=os.getenv("DB_HOST"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD"),
+        database=os.getenv("DB_NAME"),
+        charset="utf8mb4",
+        cursorclass=pymysql.cursors.DictCursor  # ดึงข้อมูลแบบ dict ได้เหมือน sqlite3.Row
+    )
     return conn
 
 def init_db():
     conn = get_db()
     cursor = conn.cursor()
 
-    # ตาราง user
+    # ตาราง users
+    # MySQL ใช้ AUTO_INCREMENT แทน AUTOINCREMENT
+    # และใช้ INT แทน INTEGER
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
-                   id       INTEGER PRIMARY KEY AUTOINCREMENT,
-                   username TEXT NOT NULL UNIQUE,
-                   password TEXT NOT NULL,
-                   created at DATETIME DEFUALT CURRENT_TIMESTAMP
-                   )
-            """) # ตัว """ 3ตัวนี้เอาไว้ทำให้เขียนคำสั่ง sql ได้หลายบรรทัดในทีเดียว
-    
-    # ตาราง โจทย์
+            id         INT PRIMARY KEY AUTO_INCREMENT,
+            username   VARCHAR(100) NOT NULL UNIQUE,
+            password   VARCHAR(255) NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # ตาราง problems
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS problems (
-                   id           INTEGER PRIMARY KEY AUTOINCREMENT,
-                   title        TEXT NOT NULL UNIQUE,
-                   description  TEXT NOT NULL,
-                   category     TEXT NOT NULL,
-                   difficulty   TEXT NOT NULL DEFAULT 'easy'
-                   )
-            """)
-    
-    # ตาราง test case
+            id          INT PRIMARY KEY AUTO_INCREMENT,
+            title       VARCHAR(255) NOT NULL UNIQUE,
+            description TEXT NOT NULL,
+            category    VARCHAR(100) NOT NULL,
+            difficulty  VARCHAR(50) NOT NULL DEFAULT 'easy',
+            timeout_sec INT NOT NULL DEFAULT 2
+        )
+    """)
+
+    # ตาราง test_cases
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS test_cases (
-                   id           INTEGER PRIMARY KEY AUTOINCREMENT,
-                   problem_id   INTEGER NOT NULL,
-                   input_data   TEXT NOT NULL,
-                   expected     TEXT NOT NULL,
-                   is_hidden    INTEGER NOT NULL DEFAULT 0,
-                   FOREIGN KEY (problem_id) REFERENCES problems(id)
-                   )
-            """)
-            
+            id         INT PRIMARY KEY AUTO_INCREMENT,
+            problem_id INT NOT NULL,
+            input_data TEXT NOT NULL,
+            expected   TEXT NOT NULL,
+            is_hidden  INT NOT NULL DEFAULT 0,
+            FOREIGN KEY (problem_id) REFERENCES problems(id)
+        )
+    """)
+
     # ตาราง submissions
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS submissions (
-                   id           INTEGER PRIMARY KEY AUTOINCREMENT,
-                   user_id      INTEGER NOT NULL,
-                   problem_id   INTEGER NOT NULL,
-                   code         TEXT NOT NULL,
-                   status       TEXT NOT NULL,
-                   submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                   FOREIGN KEY (user_id) REFERENCES users(id),
-                   FOREIGN KEY (problem_id) REFERENCES problems(id)
-                   )
-            """)
-    
+            id           INT PRIMARY KEY AUTO_INCREMENT,
+            user_id      INT NOT NULL,
+            problem_id   INT NOT NULL,
+            code         TEXT NOT NULL,
+            status       VARCHAR(50) NOT NULL,
+            submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id)    REFERENCES users(id),
+            FOREIGN KEY (problem_id) REFERENCES problems(id)
+        )
+    """)
+
     # ตาราง error_logs
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS error_logs (
-                   id           INTEGER PRIMARY KEY AUTOINCREMENT,
-                   user_id      INTEGER NOT NULL,
-                   problem_id   INTEGER NOT NULL,
-                   submission_id    INTEGER NOT NULL,
-                   error_type       TEXT NOT NULL,
-                   error_message    TEXT NOT NULL,
-                   error_line    INTEGER,
-                   logged_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
-                   FOREIGN KEY (user_id) REFERENCES users(id),
-                   FOREIGN KEY (problem_id) REFERENCES problems(id),
-                   FOREIGN KEY (submission_id) REFERENCES submissions(id)
-                   )
-            """)
-    
+            id            INT PRIMARY KEY AUTO_INCREMENT,
+            user_id       INT NOT NULL,
+            problem_id    INT NOT NULL,
+            submission_id INT NOT NULL,
+            error_type    VARCHAR(100) NOT NULL,
+            error_message TEXT NOT NULL,
+            error_line    INT,
+            logged_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id)       REFERENCES users(id),
+            FOREIGN KEY (problem_id)    REFERENCES problems(id),
+            FOREIGN KEY (submission_id) REFERENCES submissions(id)
+        )
+    """)
+
+    # ตาราง participant_mapping (PDPA)
+    # เก็บข้อมูลจริงของผู้เข้าร่วมแยกออกจากระบบหลัก
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS participant_mapping (
+            id            INT PRIMARY KEY AUTO_INCREMENT,
+            user_code     VARCHAR(20) NOT NULL UNIQUE,
+            real_name     VARCHAR(255) NOT NULL,
+            student_id    VARCHAR(20) NOT NULL,
+            pretest_score INT DEFAULT 0,
+            consented_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
     conn.commit()
+    cursor.close()
     conn.close()
-    print("สร้างฐานข้อมูลสำเร็จ")
+    print("✅ สร้างฐานข้อมูลสำเร็จ")
+
 
 def seed_problems():
     """ใส่โจทย์ตัวอย่าง 5 ข้อ"""
@@ -87,9 +112,11 @@ def seed_problems():
     cursor = conn.cursor()
 
     # เช็คว่ามีโจทย์อยู่แล้วหรือยัง
-    cursor.execute("SELECT COUNT(*) FROM problems")
-    count = cursor.fetchone()[0]
+    # MySQL + DictCursor คืนค่าเป็น dict จึงต้องดึงแบบนี้
+    cursor.execute("SELECT COUNT(*) as count FROM problems")
+    count = cursor.fetchone()["count"]
     if count > 0:
+        cursor.close()
         conn.close()
         return
 
@@ -121,23 +148,24 @@ def seed_problems():
         ),
     ]
 
+    # MySQL ใช้ %s แทน ?
     for title, desc, cat, diff in problems:
         cursor.execute(
-            "INSERT INTO problems (title, description, category, difficulty) VALUES (?,?,?,?)",
+            "INSERT INTO problems (title, description, category, difficulty) VALUES (%s, %s, %s, %s)",
             (title, desc, cat, diff)
         )
 
     conn.commit()
 
-    # ใส่ test cases ของแต่ละโจทย์
+    # ใส่ test cases
     test_cases = [
         # โจทย์ 1 — Hello World
         (1, "", "Hello World", 0),
 
         # โจทย์ 2 — บวกเลข
-        (2, "3 5",  "8",  0),
+        (2, "3 5",   "8",  0),
         (2, "10 20", "30", 1),
-        (2, "0 0",  "0",  1),
+        (2, "0 0",   "0",  1),
 
         # โจทย์ 3 — เลขคู่คี่
         (3, "4", "Even", 0),
@@ -155,13 +183,15 @@ def seed_problems():
     ]
 
     cursor.executemany(
-        "INSERT INTO test_cases (problem_id, input_data, expected, is_hidden) VALUES (?,?,?,?)",
+        "INSERT INTO test_cases (problem_id, input_data, expected, is_hidden) VALUES (%s, %s, %s, %s)",
         test_cases
     )
 
     conn.commit()
+    cursor.close()
     conn.close()
     print("✅ ใส่โจทย์ตัวอย่างสำเร็จ")
+
 
 if __name__ == "__main__":
     init_db()

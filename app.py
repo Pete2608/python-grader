@@ -9,61 +9,69 @@ from flask import (
 )
 from database import init_db, seed_problems, get_db
 import hashlib
-from grader import grade_submission  # import ฟังก์ชันตรวจโค้ด
+from grader import grade_submission
 
 app = Flask(__name__)
 app.secret_key = "demo_secret_key_2024"
 
-##  — Helper Functions
+
+# ─── Helper Functions ───────────────────────────────────
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-### get_current_user()
 def get_current_user():
     if "user_id" not in session:
         return None
     conn = get_db()
-    user = conn.execute(
-        "SELECT * FROM users WHERE id = ?", (session["user_id"],)
-    ).fetchone() # ใช้สำหรับดึงข้อมูลเพียงแถวเดียว 1 row
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE id = %s", (session["user_id"],))
+    user = cursor.fetchone()
+    cursor.close()
     conn.close()
     return user
 
-# ─── Routes
+
+# ─── Routes ─────────────────────────────────────────────
+
 @app.route("/")
 def index():
     if "user_id" not in session:
         return redirect(url_for("login"))
     return redirect(url_for("problems"))
 
-# หน้า login
-@app.route("/login", methods=["GET","POST"])
+
+@app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
         username = request.form["username"]
         password = hash_password(request.form["password"])
         conn = get_db()
-        user = conn.execute(
-            "SELECT * FROM users WHERE username=? AND password=?",
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT * FROM users WHERE username = %s AND password = %s",
             (username, password)
-        ).fetchone()
+        )
+        user = cursor.fetchone()
+        cursor.close()
         conn.close()
         if user:
-            session["user_id"] = user["id"]
+            session["user_id"]  = user["id"]
             session["username"] = user["username"]
             return redirect(url_for("problems"))
+        flash("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง")
     return render_template("login.html")
 
-# หน้าสมัคร
-@app.route("/register", methods=["GET","POST"])
+
+@app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
         username = request.form["username"]
         password = hash_password(request.form["password"])
         conn = get_db()
+        cursor = conn.cursor()
         try:
-            conn.execute(
-                "INSERT INTO users (username, password) VALUES (?,?)",
+            cursor.execute(
+                "INSERT INTO users (username, password) VALUES (%s, %s)",
                 (username, password)
             )
             conn.commit()
@@ -72,34 +80,41 @@ def register():
         except:
             flash("ชื่อผู้ใช้นี้มีอยู่แล้ว")
         finally:
+            cursor.close()
             conn.close()
     return render_template("login.html", register=True)
 
-# ออกจากระบบ logout
+
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect(url_for("login"))
 
-# หน้าโจทย์ problem
+
 @app.route("/problems")
 def problems():
     if "user_id" not in session:
         return redirect(url_for("login"))
     conn = get_db()
-    problem_list = conn.execute("SELECT * FROM problems").fetchall()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM problems")
+    problem_list = cursor.fetchall()
+    cursor.close()
     conn.close()
     return render_template("problems.html",
                            problems=problem_list,
                            username=session["username"])
 
-# Route 6 — /problem/\<id\>
+
 @app.route("/problem/<int:problem_id>")
 def problem(problem_id):
     if "user_id" not in session:
         return redirect(url_for("login"))
     conn = get_db()
-    prob = conn.execute("SELECT * FROM problems WHERE id=?", (problem_id,)).fetchone() 
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM problems WHERE id = %s", (problem_id,))
+    prob = cursor.fetchone()
+    cursor.close()
     conn.close()
     if not prob:
         return "ไม่พบโจทย์", 404
@@ -107,20 +122,22 @@ def problem(problem_id):
                            problem=prob,
                            username=session["username"])
 
-# submit route
+
 @app.route("/submit/<int:problem_id>", methods=["POST"])
 def submit(problem_id):
     if "user_id" not in session:
         return redirect(url_for("login"))
 
-    code = request.form["code"]
+    code    = request.form["code"]
     user_id = session["user_id"]
 
-    conn = get_db()
-    prob = conn.execute("SELECT * FROM problems WHERE id=?", (problem_id,)).fetchone()
+    conn   = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM problems WHERE id = %s", (problem_id,))
+    prob = cursor.fetchone()
+    cursor.close()
 
-    result = grade_submission(code, problem_id, user_id, conn)  # ← แก้ตรงนี้
-
+    result = grade_submission(code, problem_id, user_id, conn)
     conn.close()
 
     return render_template("problem.html",
@@ -129,62 +146,68 @@ def submit(problem_id):
                            submitted_code=code,
                            username=session["username"])
 
-# dashboard
+
 @app.route("/dashboard")
 def dashboard():
     if "user_id" not in session:
         return redirect(url_for("login"))
-    conn = get_db()
+
+    conn    = get_db()
+    cursor  = conn.cursor()
     user_id = session["user_id"]
 
-    total = conn.execute(
-        "SELECT COUNT(*) FROM submissions WHERE user_id = ?", (user_id,)
-    ).fetchone()[0]
+    # นับ submission ทั้งหมด
+    # DictCursor คืนค่าเป็น dict จึงต้องใช้ alias "count"
+    cursor.execute(
+        "SELECT COUNT(*) as count FROM submissions WHERE user_id = %s",
+        (user_id,)
+    )
+    total = cursor.fetchone()["count"]
 
-    passed = conn.execute(
-        "SELECT COUNT(*) FROM submissions WHERE user_id = ? AND status = 'passed'", (user_id,)
-    ).fetchone()[0]
+    # นับที่ผ่าน
+    cursor.execute(
+        "SELECT COUNT(*) as count FROM submissions WHERE user_id = %s AND status = 'passed'",
+        (user_id,)
+    )
+    passed = cursor.fetchone()["count"]
 
-    errors = conn.execute(
+    # Error แต่ละประเภท
+    cursor.execute(
         """SELECT error_type, COUNT(*) as count
-           FROM error_logs WHERE user_id=?
+           FROM error_logs WHERE user_id = %s
            GROUP BY error_type ORDER BY count DESC""",
         (user_id,)
-    ).fetchall()
+    )
+    errors = cursor.fetchall()
 
-    # ดึง submissions ทุกครั้งตามลำดับเวลา
-    # เพื่อคำนวณ PDI สะสม ณ แต่ละจุดเวลา
-    all_submissions = conn.execute(
+    # ดึง submissions ทั้งหมดตามเวลาสำหรับ PDI Timeline
+    cursor.execute(
         """SELECT status, submitted_at
            FROM submissions
-           WHERE user_id=?
+           WHERE user_id = %s
            ORDER BY submitted_at ASC""",
         (user_id,)
-    ).fetchall()
+    )
+    all_submissions = cursor.fetchall()
 
-    # คำนวณ PDI สะสม ณ แต่ละ submission
-    # pdi_timeline เป็น list of dict สำหรับส่งไปให้ Chart.js
+    # คำนวณ PDI สะสม
     pdi_timeline   = []
     running_total  = 0
     running_passed = 0
 
     for sub in all_submissions:
-        running_total  += 1
+        running_total += 1
         if sub["status"] == "passed":
             running_passed += 1
-
-        # PDI = passed / total ณ จุดนั้น คูณ 100 ให้เป็น %
         pdi_value = round(running_passed / running_total * 100, 1)
-
         pdi_timeline.append({
-            "time":  sub["submitted_at"],   # label แกน X
-            "pdi":   pdi_value,             # ค่าแกน Y
+            "time":  str(sub["submitted_at"]),
+            "pdi":   pdi_value,
             "label": f"ครั้งที่ {running_total}"
         })
-    
-    # ดึง Error Log ล่าสุด 10 รายการ สำหรับแสดงใน Error History
-    # เชื่อม error_logs กับ problems เพื่อรู้ชื่อโจทย์
-    recent_errors = conn.execute(
+
+    # Error History 10 รายการล่าสุด
+    cursor.execute(
         """SELECT el.id,
                   el.error_type,
                   el.error_message,
@@ -194,41 +217,38 @@ def dashboard():
                   p.id    as problem_id
            FROM error_logs el
            JOIN problems p ON el.problem_id = p.id
-           WHERE el.user_id = ?
+           WHERE el.user_id = %s
            ORDER BY el.logged_at DESC
            LIMIT 10""",
         (user_id,)
-    ).fetchall()
-    # JOIN เป็นการเชื่อม 2 ตารางเข้าด้วยกัน
-    # ON el.problem_id = p.id คือเงื่อนไขการเชื่อม
+    )
+    recent_errors = cursor.fetchall()
 
+    cursor.close()
     conn.close()
-    return render_template("dashboard.html",username=session["username"],
-                           total=total,
-                           passed=passed,
-                           failed=total - passed,
-                           errors=errors,
-                           pdi_timeline = pdi_timeline,    # ← ส่งไปให้ HTML
-                           recent_errors= recent_errors
-                           )
 
-# error detail route
+    return render_template(
+        "dashboard.html",
+        username     = session["username"],
+        total        = total,
+        passed       = passed,
+        failed       = total - passed,
+        errors       = errors,
+        pdi_timeline = pdi_timeline,
+        recent_errors= recent_errors
+    )
+
+
 @app.route("/error/<int:error_id>")
 def error_detail(error_id):
-    """
-    หน้าแสดงรายละเอียด Error แต่ละครั้ง
-    ผู้เรียนกดดูจาก Dashboard แล้วเห็นรายละเอียดเต็มๆ
-    รวมถึงโค้ดที่ส่งครั้งนั้น และคำอธิบาย Error Type
-    """
-    if "user_id" not in session: # เช็คว่า login อยู่รึป่าว
+    if "user_id" not in session:
         return redirect(url_for("login"))
 
     conn    = get_db()
+    cursor  = conn.cursor()
     user_id = session["user_id"]
 
-    # ดึง error log พร้อมข้อมูลโจทย์และโค้ดที่ส่ง
-    # ใช้ JOIN 3 ตาราง: error_logs + problems + submissions
-    error = conn.execute(
+    cursor.execute(
         """SELECT el.id,
                   el.error_type,
                   el.error_message,
@@ -241,16 +261,16 @@ def error_detail(error_id):
            FROM error_logs el
            JOIN problems    p ON el.problem_id    = p.id
            JOIN submissions s ON el.submission_id = s.id
-           WHERE el.id = ? AND el.user_id = ?""",
+           WHERE el.id = %s AND el.user_id = %s""",
         (error_id, user_id)
-    ).fetchone()
+    )
+    error = cursor.fetchone()
+    cursor.close()
     conn.close()
 
     if not error:
         return "ไม่พบข้อมูล", 404
-    
-    # คำอธิบาย Error แต่ละประเภทเป็นภาษาไทย
-    # เก็บเป็น dict ใน Python แล้วส่งไปให้ HTML
+
     error_explanations = {
         "SyntaxError": {
             "title": "SyntaxError — โค้ดผิดรูปแบบ",
@@ -306,8 +326,7 @@ def error_detail(error_id):
             ]
         }
     }
-    # ดึงคำอธิบายของ error_type นี้
-    # ถ้าไม่อยู่ใน dict ใช้ข้อมูล default
+
     explanation = error_explanations.get(
         error["error_type"],
         {
@@ -324,7 +343,8 @@ def error_detail(error_id):
         username    = session["username"]
     )
 
-# ─── Init ──
+
+# ─── Init ────────────────────────────────────────────────
 if __name__ == "__main__":
     init_db()
     seed_problems()
