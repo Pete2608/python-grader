@@ -57,11 +57,14 @@
 }
 
 .btn-see-detail {
+    display:       inline-flex;
+    align-items:   center;
+    gap:           0.3rem;
     font-size:     0.82rem;
     color:         var(--accent);
     border:        1px solid var(--accent);
     padding:       0.3rem 0.85rem;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     white-space:   nowrap;
     transition:    all 0.2s;
 }
@@ -98,30 +101,40 @@
     display:       inline-block;
     font-family:   var(--font-code);
     font-size:     0.85rem;
-    background:    #1c0a0a;
-    color:         #fca5a5;
+    background:    var(--danger-soft);
+    color:         var(--danger);
     padding:       0.3rem 0.85rem;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     margin-bottom: 0.75rem;
 }
 
 .error-explain-header h2 {
-    font-size:   1.35rem;
+    font-family: var(--font-head);
+    font-size:   1.25rem;
     font-weight: 700;
     margin-bottom: 0.5rem;
 }
 
+.error-time,
+.error-problem {
+    display:     flex;
+    align-items: center;
+    gap:         0.35rem;
+}
 .error-time    { font-size: 0.82rem; color: var(--text-muted); }
 .error-problem { font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem; }
 
 .error-explain-body h3,
 .error-tips h3,
 .error-raw h3 {
-    font-size:     0.9rem;
-    color:         var(--text-secondary);
+    display:        flex;
+    align-items:    center;
+    gap:            0.4rem;
+    font-size:      0.9rem;
+    color:          var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin-bottom: 0.75rem;
+    margin-bottom:  0.75rem;
 }
 
 .error-explain-body p {
@@ -161,10 +174,10 @@
     font-family:  var(--font-code);
     font-size:    0.8rem;
     background:   var(--bg-primary);
-    border:       1px solid #7f1d1d;
-    border-radius: 8px;
+    border:       1px solid var(--danger);
+    border-radius: var(--radius-sm);
     padding:      1rem;
-    color:        #fca5a5;
+    color:        var(--danger);
     white-space:  pre-wrap;
     overflow-x:   auto;
     line-height:  1.6;
@@ -188,38 +201,47 @@
 }
 
 .error-code-header h3 {
-    font-size:  1rem;
+    display:     flex;
+    align-items: center;
+    gap:         0.4rem;
+    font-size:   1rem;
     font-weight: 600;
 }
 
 .badge-error-type {
     font-family:  var(--font-code);
     font-size:    0.75rem;
-    background:   #1c0a0a;
-    color:        #fca5a5;
+    background:   var(--danger-soft);
+    color:        var(--danger);
     padding:      0.2rem 0.6rem;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
 }
 
 .btn-go-fix {
-    display:     block;
-    text-align:  center;
-    margin-top:  0.5rem;
+    display:         flex;
+    align-items:     center;
+    justify-content: center;
+    gap:             0.4rem;
+    text-align:      center;
+    margin-top:      0.5rem;
 }
 
 /* AST Warning Box ─────────────────────────────── */
 /* เพิ่มใน problem.html ถ้ามี ast_warnings */
 .ast-warnings {
-    background:    #1c1407;
-    border:        1px solid #78350f;
-    border-radius: 10px;
+    background:    var(--warning-soft);
+    border:        1px solid var(--warning);
+    border-radius: var(--radius-sm);
     padding:       1rem 1.25rem;
     margin-bottom: 1rem;
 }
 
 .ast-warnings h4 {
+    display:       flex;
+    align-items:   center;
+    gap:           0.4rem;
     font-size:     0.85rem;
-    color:         #fcd34d;
+    color:         var(--warning);
     margin-bottom: 0.6rem;
 }
 
@@ -231,8 +253,15 @@
 }
 
 .ast-warnings li {
-    font-size: 0.85rem;
-    color:     #fde68a;
+    display:     flex;
+    align-items: flex-start;
+    gap:         0.4rem;
+    font-size:   0.85rem;
+    color:       #f3d08a;
+}
+.ast-warnings li .icon {
+    margin-top: 0.15rem;
+    color: var(--warning);
 }
 
 /* Responsive ─────────────────────────────────── */

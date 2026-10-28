@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 
-{% block title %}รายละเอียด {{ error['error_type'] }}{% endblock %}
+{% block title %}รายละเอียด {{ error['exception_name'] }}{% endblock %}
 
 {% block content %}
+{% from "_icons.html" import icon %}
 
 <div class="page-container">
 
@@ -22,11 +23,11 @@
 
             <!-- หัวข้อ Error -->
             <div class="error-explain-header">
-                <span class="error-type-big">{{ error['error_type'] }}</span>
+                <span class="error-type-big">{{ error['exception_name'] }}</span>
                 <h2>{{ explanation['title'] }}</h2>
-                <p class="error-time">🕐 {{ error['logged_at'] }}</p>
+                <p class="error-time">{{ icon('clock', 13) }} {{ error['logged_at'] }}</p>
                 <p class="error-problem">
-                    📝 โจทย์:
+                    {{ icon('file-text', 13) }} โจทย์:
                     <a href="{{ url_for('problem', problem_id=error['problem_id']) }}">
                         {{ error['problem_title'] }}
                     </a>
@@ -35,13 +36,13 @@
 
             <!-- คำอธิบาย -->
             <div class="error-explain-body">
-                <h3>❓ เกิดจากอะไร?</h3>
+                <h3>{{ icon('help-circle', 16) }} เกิดจากอะไร?</h3>
                 <p>{{ explanation['desc'] }}</p>
             </div>
 
             <!-- Tips แก้ไข -->
             <div class="error-tips">
-                <h3>💡 วิธีแก้ไข</h3>
+                <h3>{{ icon('lightbulb', 16) }} วิธีแก้ไข</h3>
                 <ul>
                     {% for tip in explanation['tips'] %}
                     <li>{{ tip }}</li>
@@ -51,7 +52,7 @@
 
             <!-- Error Message จริง -->
             <div class="error-raw">
-                <h3>📋 Error Message</h3>
+                <h3>{{ icon('file-text', 16) }} Error Message</h3>
                 {% if error['error_line'] %}
                 <p class="error-line-info">บรรทัดที่เกิด error: <strong>{{ error['error_line'] }}</strong></p>
                 {% endif %}
@@ -69,8 +70,8 @@
         -->
         <div class="error-code-card">
             <div class="error-code-header">
-                <h3>🐍 โค้ดที่ส่ง</h3>
-                <span class="badge badge-error-type">{{ error['error_type'] }}</span>
+                <h3>{{ icon('terminal', 16) }} โค้ดที่ส่ง</h3>
+                <span class="badge badge-error-type">{{ error['exception_name'] }}</span>
             </div>
 
             <!--
@@ -82,7 +83,7 @@
             <!-- ปุ่มไปแก้โค้ด — ลิงก์ไปหน้าโจทย์นั้น -->
             <a href="{{ url_for('problem', problem_id=error['problem_id']) }}"
                class="btn-primary btn-go-fix">
-                ✏️ ไปแก้โค้ด
+                {{ icon('edit', 15) }} ไปแก้โค้ด
             </a>
         </div>
 

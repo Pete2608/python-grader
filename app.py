@@ -9,10 +9,19 @@ from flask import (
 )
 from database import init_db, seed_problems, get_db
 import hashlib
-from grader import grade_submission
+from grader import grade_submission, calc_performance_metrics
 
 app = Flask(__name__)
 app.secret_key = "demo_secret_key_2024"
+
+# ลำดับหัวข้อตามขอบเขตของโครงร่างปัญหาพิเศษ (หัวข้อ 5.1)
+CATEGORY_ORDER = [
+    "ตัวแปรและชนิดข้อมูล",
+    "นิพจน์และตัวดำเนินการ",
+    "คำสั่งเงื่อนไข",
+    "คำสั่งวนซ้ำ",
+    "ฟังก์ชัน",
+]
 
 
 # ─── Helper Functions ───────────────────────────────────
@@ -48,7 +57,7 @@ def login():
         conn = get_db()
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT * FROM users WHERE username = %s AND password = %s",
+            "SELECT * FROM users WHERE username = %s AND password_hash = %s",
             (username, password)
         )
         user = cursor.fetchone()
@@ -71,7 +80,7 @@ def register():
         cursor = conn.cursor()
         try:
             cursor.execute(
-                "INSERT INTO users (username, password) VALUES (%s, %s)",
+                "INSERT INTO users (username, password_hash) VALUES (%s, %s)",
                 (username, password)
             )
             conn.commit()
@@ -101,8 +110,19 @@ def problems():
     problem_list = cursor.fetchall()
     cursor.close()
     conn.close()
+
+    # เรียงเนื้อหาโจทย์แยกตามประเภท (หัวข้อการเรียน) ตามลำดับที่กำหนดในขอบเขตโครงงาน
+    grouped = {}
+    for idx, p in enumerate(problem_list, start=1):
+        p["number"] = idx
+        grouped.setdefault(p["category"], []).append(p)
+
+    ordered_categories = [c for c in CATEGORY_ORDER if c in grouped]
+    ordered_categories += [c for c in grouped if c not in CATEGORY_ORDER]
+    grouped_problems = [(c, grouped[c]) for c in ordered_categories]
+
     return render_template("problems.html",
-                           problems=problem_list,
+                           grouped_problems=grouped_problems,
                            username=session["username"])
 
 
@@ -166,49 +186,32 @@ def dashboard():
 
     # นับที่ผ่าน
     cursor.execute(
-        "SELECT COUNT(*) as count FROM submissions WHERE user_id = %s AND status = 'passed'",
+        "SELECT COUNT(*) as count FROM submissions WHERE user_id = %s AND status = 'Passed'",
         (user_id,)
     )
     passed = cursor.fetchone()["count"]
 
-    # Error แต่ละประเภท
+    # Error แต่ละประเภท — error_logs ไม่เก็บ user_id ซ้ำแล้ว ต้อง JOIN ผ่าน submissions
     cursor.execute(
-        """SELECT error_type, COUNT(*) as count
-           FROM error_logs WHERE user_id = %s
-           GROUP BY error_type ORDER BY count DESC""",
+        """SELECT el.error_type, COUNT(*) as count
+           FROM error_logs el
+           JOIN submissions s ON el.submission_id = s.id
+           WHERE s.user_id = %s
+           GROUP BY el.error_type ORDER BY count DESC""",
         (user_id,)
     )
     errors = cursor.fetchall()
 
-    # ดึง submissions ทั้งหมดตามเวลาสำหรับ PDI Timeline
-    cursor.execute(
-        """SELECT status, submitted_at
-           FROM submissions
-           WHERE user_id = %s
-           ORDER BY submitted_at ASC""",
-        (user_id,)
-    )
-    all_submissions = cursor.fetchall()
+    # ตัวชี้วัดผลการส่งโปรแกรม ตามหัวข้อ 5.1.1 ของโครงร่างปัญหาพิเศษ
+    # SuccessRate, ExecutionErrorRate, FirstAttemptRate — เป็นค่าร้อยละที่แสดง "แนวโน้ม"
+    # การเปลี่ยนแปลงของผลการส่งโปรแกรม ไม่ใช่คะแนนวัดความสามารถ
+    performance_metrics = calc_performance_metrics(cursor, user_id)
 
-    # คำนวณ PDI สะสม
-    pdi_timeline   = []
-    running_total  = 0
-    running_passed = 0
-
-    for sub in all_submissions:
-        running_total += 1
-        if sub["status"] == "passed":
-            running_passed += 1
-        pdi_value = round(running_passed / running_total * 100, 1)
-        pdi_timeline.append({
-            "time":  str(sub["submitted_at"]),
-            "pdi":   pdi_value,
-            "label": f"ครั้งที่ {running_total}"
-        })
-
-    # Error History 10 รายการล่าสุด
+    # Error History 10 รายการล่าสุด — error_logs ไม่เก็บ user_id/problem_id ซ้ำแล้ว
+    # ต้อง JOIN ผ่าน submissions เพื่อดึง user_id และ problem_id
     cursor.execute(
         """SELECT el.id,
+                  el.exception_name,
                   el.error_type,
                   el.error_message,
                   el.error_line,
@@ -216,8 +219,9 @@ def dashboard():
                   p.title as problem_title,
                   p.id    as problem_id
            FROM error_logs el
-           JOIN problems p ON el.problem_id = p.id
-           WHERE el.user_id = %s
+           JOIN submissions s ON el.submission_id = s.id
+           JOIN problems    p ON s.problem_id     = p.id
+           WHERE s.user_id = %s
            ORDER BY el.logged_at DESC
            LIMIT 10""",
         (user_id,)
@@ -229,13 +233,15 @@ def dashboard():
 
     return render_template(
         "dashboard.html",
-        username     = session["username"],
-        total        = total,
-        passed       = passed,
-        failed       = total - passed,
-        errors       = errors,
-        pdi_timeline = pdi_timeline,
-        recent_errors= recent_errors
+        username          = session["username"],
+        total             = total,
+        passed            = passed,
+        failed            = total - passed,
+        errors            = errors,
+        recent_errors     = recent_errors,
+        success_rate         = performance_metrics["success_rate"],
+        execution_error_rate = performance_metrics["execution_error_rate"],
+        first_attempt_rate   = performance_metrics["first_attempt_rate"]
     )
 
 
@@ -250,6 +256,7 @@ def error_detail(error_id):
 
     cursor.execute(
         """SELECT el.id,
+                  el.exception_name,
                   el.error_type,
                   el.error_message,
                   el.error_line,
@@ -259,9 +266,9 @@ def error_detail(error_id):
                   p.description as problem_description,
                   s.code        as submitted_code
            FROM error_logs el
-           JOIN problems    p ON el.problem_id    = p.id
            JOIN submissions s ON el.submission_id = s.id
-           WHERE el.id = %s AND el.user_id = %s""",
+           JOIN problems    p ON s.problem_id      = p.id
+           WHERE el.id = %s AND s.user_id = %s""",
         (error_id, user_id)
     )
     error = cursor.fetchone()
@@ -316,6 +323,15 @@ def error_detail(error_id):
                 "ใช้ try/except ดักจับกรณี input ไม่ใช่ตัวเลข"
             ]
         },
+        "IndexError": {
+            "title": "IndexError — เข้าถึงตำแหน่งที่ไม่มีอยู่",
+            "desc":  "เข้าถึงสมาชิกใน List/Tuple/String เกินจำนวนที่มีอยู่จริง",
+            "tips":  [
+                "ตรวจสอบขนาด (length) ก่อนเข้าถึงด้วย index",
+                "ระวัง index เริ่มที่ 0 ไม่ใช่ 1",
+                "ใช้ for item in list แทนการวน index ถ้าไม่จำเป็นต้องใช้ index"
+            ]
+        },
         "TimeoutError": {
             "title": "TimeoutError — โค้ดทำงานนานเกินไป",
             "desc":  "โค้ดใช้เวลาเกิน 2 วินาที มักเกิดจาก infinite loop",
@@ -328,9 +344,9 @@ def error_detail(error_id):
     }
 
     explanation = error_explanations.get(
-        error["error_type"],
+        error["exception_name"],
         {
-            "title": error["error_type"],
+            "title": error["exception_name"],
             "desc":  "เกิดข้อผิดพลาดขณะรันโค้ด",
             "tips":  ["อ่าน error message ด้านบนเพื่อหาสาเหตุ"]
         }

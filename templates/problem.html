@@ -3,6 +3,7 @@
 {% block title %}{{ problem['title'] }}{% endblock %}
 
 {% block content %}
+{% from "_icons.html" import icon %}
 
 <div class="problem-page">
 
@@ -48,20 +49,39 @@
         {% if result %}
         <div class="result-container">
 
-            <!-- สถานะรวม -->
-            {% if result['status'] == 'passed' %}
+            <!-- สถานะรวม (Passed, Wrong Answer, Execution Error, Timeout, Security Violation)
+                 ตามตารางที่ 5 ของโครงร่างปัญหาพิเศษ — แต่ละสถานะมีไอคอน/สีของตัวเอง -->
+            {% if result['status'] == 'Passed' %}
             <div class="result-status status-passed">
-                ✅ ผ่านทุก Test Case!
+                {{ icon('check', 18) }} ผ่านทุก Test Case!
             </div>
-            {% elif result['status'] == 'error' %}
-            <div class="result-status status-error">
-                ❌ เกิดข้อผิดพลาด: {{ result['error_type'] }}
+            {% elif result['status'] == 'Wrong Answer' %}
+            <div class="result-status status-wrong-answer">
+                {{ icon('alert-circle', 18) }} Wrong Answer — ไม่ผ่านบาง Test Case
+            </div>
+            {% elif result['status'] == 'Timeout' %}
+            <div class="result-status status-timeout">
+                {{ icon('clock', 18) }} Timeout — โค้ดทำงานนานเกินเวลาที่กำหนด
+            </div>
+            {% elif result['status'] == 'Security Violation' %}
+            <div class="result-status status-security-violation">
+                {{ icon('shield-alert', 18) }} Security Violation — Sandbox ปฏิเสธการกระทำที่ถูกจำกัด
             </div>
             {% else %}
-            <div class="result-status status-failed">
-                ⚠️ ไม่ผ่านบาง Test Case
+            <div class="result-status status-execution-error">
+                {{ icon('x', 18) }} Execution Error: {{ result['exception_name'] }}
             </div>
             {% endif %}
+
+            <!-- ข้อมูลประกอบการส่ง (Table 1 ของโครงร่างปัญหาพิเศษ): เวลาประมวลผล + สรุปผล Test Case -->
+            <div class="submission-meta">
+                {% if result['execution_time_ms'] is not none %}
+                <span class="meta-chip">{{ icon('timer', 14) }} {{ result['execution_time_ms'] }} ms</span>
+                {% endif %}
+                {% if result['test_case_summary'] %}
+                <span class="meta-chip">{{ icon('list', 14) }} {{ result['test_case_summary'] }}</span>
+                {% endif %}
+            </div>
 
             <!-- แสดง Error Message ถ้ามี -->
             {% if result['error_message'] %}
@@ -72,11 +92,13 @@
             {% endif %}
 
             {% if result['ast_warnings'] %}
-            <div class="warning-box">
-                <h4>คำเตือน:</h4>
-                {% for w in result['ast_warnings'] %}
-                <p>⚠️ {{ w }}</p>
-                {% endfor %}
+            <div class="warning-box ast-warnings">
+                <h4>{{ icon('lightbulb', 16) }} คำแนะนำด้านคุณภาพซอร์สโค้ด (ไม่มีผลต่อผลการตรวจ):</h4>
+                <ul>
+                    {% for w in result['ast_warnings'] %}
+                    <li>{{ icon('lightbulb', 14) }} {{ w }}</li>
+                    {% endfor %}
+                </ul>
             </div>
             {% endif %}
 
@@ -91,7 +113,7 @@
                     -->
                 <div class="test-case {% if tc['passed'] %}tc-passed{% else %}tc-failed{% endif %}">
                     <div class="tc-header">
-                        {% if tc['passed'] %}✅{% else %}❌{% endif %}
+                        {% if tc['passed'] %}{{ icon('check', 15) }}{% else %}{{ icon('x', 15) }}{% endif %}
                         Test Case
                     </div>
                     {% if tc['input'] %}
@@ -114,8 +136,10 @@
                 {% else %}
                 <!-- Hidden test case แสดงแค่ว่าผ่านหรือเปล่า -->
                 <div class="test-case {% if tc['passed'] %}tc-passed{% else %}tc-failed{% endif %}">
-                    {% if tc['passed'] %}✅{% else %}❌{% endif %}
-                    Hidden Test Case
+                    <span class="tc-header">
+                        {% if tc['passed'] %}{{ icon('check', 15) }}{% else %}{{ icon('x', 15) }}{% endif %}
+                        Hidden Test Case
+                    </span>
                 </div>
                 {% endif %}
                 {% endfor %}
@@ -135,7 +159,7 @@
 
         <div class="editor-container">
             <div class="editor-header">
-                <span>🐍 Python</span>
+                <span>{{ icon('terminal', 16) }} Python</span>
                 <button onclick="clearEditor()" class="btn-clear">ล้าง</button>
             </div>
 
@@ -158,7 +182,7 @@
                 -->
 
                 <button type="submit" class="btn-submit">
-                    ▶ ส่งคำตอบ
+                    {{ icon('play', 17) }} ส่งคำตอบ
                 </button>
 
             </form>

@@ -2,27 +2,42 @@
    style.css — PyLearn
    ================================================ */
 
-/* ─── CSS Variables — เปลี่ยนสีทั้งระบบได้ที่นี่ที่เดียว ─── */
+/* ─── CSS Variables — เปลี่ยนสีทั้งระบบได้ที่นี่ที่เดียว ───
+   ธีม "เทอร์มินัล" โทนเกือบดำ + เหลืองอำพัน (amber) แทนโทน
+   ม่วง-น้ำเงินและพื้นเทาเข้มสไตล์แดชบอร์ดทั่วไป เพื่อให้มีเอกลักษณ์
+   ของตัวเอง และใช้สีแยกตามสถานะ 5 แบบ (Passed/Wrong Answer/
+   Execution Error/Timeout/Security Violation) ให้ต่างกันชัดเจน */
 :root {
-  --bg-primary: #0f172a; /* พื้นหลักเข้ม */
-  --bg-secondary: #1e293b; /* พื้นหลังรอง */
-  --bg-card: #1e293b; /* พื้นหลัง card */
-  --bg-hover: #334155; /* สีเมื่อ hover */
+  --bg-primary: #0a0b0f; /* พื้นหลักเกือบดำ */
+  --bg-secondary: #12141b; /* พื้นหลังรอง */
+  --bg-card: #13151c; /* พื้นหลัง card */
+  --bg-hover: #1d2029; /* สีเมื่อ hover */
 
-  --text-primary: #f1f5f9; /* ข้อความหลัก ขาว */
-  --text-secondary: #94a3b8; /* ข้อความรอง เทา */
-  --text-muted: #64748b; /* ข้อความจางๆ */
+  --text-primary: #e8e9ed; /* ข้อความหลัก */
+  --text-secondary: #8b8fa3; /* ข้อความรอง */
+  --text-muted: #5b5f72; /* ข้อความจางๆ */
 
-  --accent: #6366f1; /* สีหลัก ม่วง-น้ำเงิน */
-  --accent-hover: #4f46e5;
-  --success: #22c55e; /* เขียว ผ่าน */
-  --danger: #ef4444; /* แดง ผิดพลาด */
-  --warning: #f59e0b; /* เหลือง คำเตือน */
+  --accent: #e3a033; /* สีหลัก เหลืองอำพัน (terminal cursor) */
+  --accent-hover: #c98a22;
+  --accent-soft: #2a2010;
 
-  --border: #334155; /* สีเส้นขอบ */
-  --radius: 12px; /* ความโค้งมุม */
+  --success: #3ddc84; /* เขียว — Passed */
+  --success-soft: #0f2a1d;
+  --warning: #f0b23c; /* เหลือง — Wrong Answer */
+  --warning-soft: #2a2110;
+  --danger: #ef5b5b; /* แดง — Execution Error */
+  --danger-soft: #2a1414;
+  --info: #4fb5e0; /* ฟ้า — Timeout */
+  --info-soft: #122a33;
+  --violation: #d1588f; /* ชมพูอมม่วง — Security Violation */
+  --violation-soft: #2a1420;
+
+  --border: #262a36; /* สีเส้นขอบ */
+  --radius: 10px; /* ความโค้งมุม card */
+  --radius-sm: 6px; /* ความโค้งมุม tag/badge */
   --font-main: "Noto Sans Thai", sans-serif;
   --font-code: "JetBrains Mono", monospace;
+  --font-head: "JetBrains Mono", var(--font-main);
 }
 
 /* ─── Reset และ Base ─── */
@@ -36,7 +51,13 @@
 
 body {
   font-family: var(--font-main);
-  background: var(--bg-primary);
+  background-color: var(--bg-primary);
+  background-image: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.035) 1px,
+    transparent 1px
+  );
+  background-size: 22px 22px;
   color: var(--text-primary);
   line-height: 1.6;
   min-height: 100vh;
@@ -50,6 +71,11 @@ a {
 }
 a:hover {
   color: var(--accent-hover);
+}
+
+.icon {
+  flex-shrink: 0;
+  vertical-align: -3px;
 }
 
 /* ─── NAVBAR ─── */
@@ -72,10 +98,30 @@ a:hover {
 }
 
 .navbar-brand {
-  font-size: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-head);
+  font-size: 1.1rem;
   font-weight: 700;
   color: var(--text-primary);
-  letter-spacing: -0.5px;
+  letter-spacing: -0.3px;
+}
+.navbar-brand .icon {
+  color: var(--accent);
+}
+.navbar-brand::after {
+  content: "";
+  width: 7px;
+  height: 1.1rem;
+  background: var(--accent);
+  margin-left: 0.1rem;
+  animation: blink-cursor 1.1s steps(1) infinite;
+}
+@keyframes blink-cursor {
+  50% {
+    opacity: 0;
+  }
 }
 
 .navbar-menu {
@@ -99,6 +145,9 @@ a:hover {
 }
 
 .navbar-username {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   color: var(--text-secondary);
   font-size: 0.85rem;
 }
@@ -145,8 +194,15 @@ a:hover {
   margin-bottom: 2rem;
 }
 .page-header h2 {
-  font-size: 1.75rem;
+  font-family: var(--font-head);
+  font-size: 1.6rem;
   font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+.page-header h2 .icon {
+  color: var(--accent);
 }
 .page-header p {
   color: var(--text-secondary);
@@ -186,7 +242,15 @@ a:hover {
   margin-bottom: 2rem;
 }
 .auth-header h1 {
-  font-size: 2rem;
+  font-family: var(--font-head);
+  font-size: 1.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.auth-header h1 .icon {
+  color: var(--accent);
 }
 .auth-header p {
   color: var(--text-secondary);
@@ -253,6 +317,19 @@ a:hover {
 }
 
 /* ─── PROBLEMS LIST ─── */
+.category-section {
+  margin-bottom: 2.5rem;
+}
+
+.category-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--border);
+}
+
 .problems-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -289,10 +366,11 @@ a:hover {
 }
 
 .problem-category {
-  font-size: 0.75rem;
+  font-family: var(--font-code);
+  font-size: 0.72rem;
   background: var(--bg-hover);
-  padding: 0.2rem 0.6rem;
-  border-radius: 20px;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-sm);
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -310,23 +388,24 @@ a:hover {
 
 /* Badges */
 .badge {
+  font-family: var(--font-code);
   font-size: 0.72rem;
   padding: 0.2rem 0.6rem;
-  border-radius: 20px;
+  border-radius: var(--radius-sm);
   font-weight: 600;
   margin-left: auto;
 }
 .badge-easy {
-  background: #14532d;
-  color: #86efac;
+  background: var(--success-soft);
+  color: var(--success);
 }
 .badge-medium {
-  background: #78350f;
-  color: #fcd34d;
+  background: var(--warning-soft);
+  color: var(--warning);
 }
 .badge-hard {
-  background: #7f1d1d;
-  color: #fca5a5;
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
 /* ─── PROBLEM DETAIL PAGE ─── */
@@ -357,7 +436,8 @@ a:hover {
   color: var(--text-primary);
 }
 .problem-detail-header h2 {
-  font-size: 1.5rem;
+  font-family: var(--font-head);
+  font-size: 1.35rem;
   font-weight: 700;
 }
 .problem-meta {
@@ -390,23 +470,69 @@ a:hover {
 }
 
 .result-status {
-  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--font-code);
+  font-size: 0.95rem;
   font-weight: 600;
   padding: 0.75rem 1rem;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid currentColor;
   margin-bottom: 1rem;
 }
+/* สถานะผลการตัดสิน 5 แบบตามตารางที่ 5 ของโครงร่างปัญหาพิเศษ
+   แต่ละสถานะใช้สีและไอคอนของตัวเอง ไม่ปนกัน */
 .status-passed {
-  background: #14532d;
-  color: #86efac;
+  background: var(--success-soft);
+  color: var(--success);
 }
+.status-wrong-answer {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.status-execution-error {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.status-timeout {
+  background: var(--info-soft);
+  color: var(--info);
+}
+.status-security-violation {
+  background: var(--violation-soft);
+  color: var(--violation);
+}
+/* เผื่อสคริปต์/หน้าอื่นยังอ้างชื่อคลาสเดิม */
 .status-failed {
-  background: #78350f;
-  color: #fcd34d;
+  background: var(--warning-soft);
+  color: var(--warning);
 }
 .status-error {
-  background: #7f1d1d;
-  color: #fca5a5;
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.submission-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-code);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-sm);
+}
+.meta-chip .icon {
+  color: var(--accent);
 }
 
 .error-box {
@@ -452,8 +578,17 @@ a:hover {
 }
 
 .tc-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   font-weight: 600;
   margin-bottom: 0.4rem;
+}
+.tc-passed .tc-header {
+  color: var(--success);
+}
+.tc-failed .tc-header {
+  color: var(--danger);
 }
 .tc-row {
   display: flex;
@@ -496,8 +631,15 @@ code {
   padding: 0.75rem 1rem;
   background: var(--bg-hover);
   border-bottom: 1px solid var(--border);
+  font-family: var(--font-code);
   font-size: 0.85rem;
   font-weight: 600;
+}
+.editor-header span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--accent);
 }
 
 .btn-clear {
@@ -526,8 +668,12 @@ code {
 
 .btn-submit {
   width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   background: var(--success);
-  color: #052e16;
+  color: #06250f;
   border: none;
   padding: 0.9rem;
   font-family: var(--font-main);
@@ -557,11 +703,14 @@ code {
 }
 
 .stat-icon {
-  font-size: 2rem;
   margin-bottom: 0.5rem;
+  color: var(--accent);
+  display: flex;
+  justify-content: center;
 }
 .stat-number {
-  font-size: 2.5rem;
+  font-family: var(--font-head);
+  font-size: 2.25rem;
   font-weight: 700;
 }
 .stat-label {
@@ -571,78 +720,16 @@ code {
 }
 
 .stat-passed {
-  border-color: #166534;
+  border-color: var(--success);
+}
+.stat-passed .stat-icon {
+  color: var(--success);
 }
 .stat-failed {
-  border-color: #7f1d1d;
+  border-color: var(--danger);
 }
-
-/* PDI */
-.pdi-container {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.pdi-header h3 {
-  font-size: 1.1rem;
-  margin-bottom: 0.25rem;
-}
-.pdi-header p {
-  color: var(--text-secondary);
-  font-size: 0.85rem;
-}
-
-.pdi-bar-container {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin: 1.25rem 0 1rem;
-}
-.pdi-bar {
-  flex: 1;
-  background: var(--bg-hover);
-  border-radius: 20px;
-  height: 16px;
-  overflow: hidden;
-}
-.pdi-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--accent), #22c55e);
-  border-radius: 20px;
-  transition: width 1s ease;
-  min-width: 4px;
-}
-.pdi-value {
-  font-size: 1.25rem;
-  font-weight: 700;
-  min-width: 60px;
-}
-
-.level-badge {
-  display: inline-block;
-  padding: 0.4rem 1rem;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-.level-excellent {
-  background: #14532d;
-  color: #86efac;
-}
-.level-good {
-  background: #1e3a5f;
-  color: #93c5fd;
-}
-.level-fair {
-  background: #78350f;
-  color: #fcd34d;
-}
-.level-begin {
-  background: #1e293b;
-  color: #94a3b8;
+.stat-failed .stat-icon {
+  color: var(--danger);
 }
 
 /* Chart */
@@ -653,8 +740,15 @@ code {
   padding: 1.5rem;
 }
 .chart-container h3 {
-  font-size: 1.1rem;
+  font-family: var(--font-head);
+  font-size: 1.05rem;
   margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.chart-container h3 .icon {
+  color: var(--accent);
 }
 .chart-wrapper {
   max-height: 300px;
@@ -688,10 +782,10 @@ code {
 .error-type-badge {
   font-family: var(--font-code);
   font-size: 0.82rem;
-  background: #1c0a0a;
-  color: #fca5a5;
+  background: var(--danger-soft);
+  color: var(--danger);
   padding: 0.2rem 0.6rem;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
 }
 
 /* ─── EMPTY STATE ─── */

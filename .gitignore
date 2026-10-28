@@ -5,3 +5,15 @@ __pycache__/
 .env
 *.pyc
 instance/
+
+# ข้อมูลสำรอง DB มีข้อมูลการส่งโค้ด/ผู้ใช้จริง ไม่ควรขึ้น GitHub (PDPA)
+db_backup_*.json
+
+# ไฟล์เอกสารโครงร่าง/ฉบับร่าง ไม่ใช่ส่วนของ demo โค้ด เก็บแยกนอก repo
+*.docx
+*.pdf
+
+# ไฟล์ชั่วคราว/ของระบบปฏิบัติการ
+desktop.ini
+server.log
+*.log

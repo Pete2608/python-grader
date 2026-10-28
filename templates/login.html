@@ -3,6 +3,7 @@
 {% block title %}เข้าสู่ระบบ{% endblock %}
 
 {% block content %}
+{% from "_icons.html" import icon %}
 
 <div class="auth-container">
 
@@ -10,7 +11,7 @@
     <!-- ============ ฟอร์มสมัครสมาชิก ============ -->
     <div class="auth-card">
         <div class="auth-header">
-            <h1>🐍 PyLearn</h1>
+            <h1>{{ icon('terminal', 22) }} PyLearn</h1>
             <p>สร้างบัญชีใหม่</p>
         </div>
 
@@ -35,7 +36,7 @@
     <!-- ============ ฟอร์ม Login ============ -->
     <div class="auth-card">
         <div class="auth-header">
-            <h1>🐍 PyLearn</h1>
+            <h1>{{ icon('terminal', 22) }} PyLearn</h1>
             <p>เข้าสู่ระบบเพื่อเริ่มฝึกเขียนโปรแกรม</p>
         </div>
 

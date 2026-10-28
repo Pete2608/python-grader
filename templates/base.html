@@ -18,10 +18,11 @@
 </head>
 
 <body>
+    {% from "_icons.html" import icon %}
     <nav class="navbar">
         <div class="navbar-container">
             <a href="{{ url_for('problems') }}" class="navbar-brand">
-                🐍 PyLearn
+                {{ icon('terminal', 20) }} PyLearn
             </a>
             {% if session.get('username') %}
             <div class="navbar-menu">
@@ -29,7 +30,7 @@
                     class="nav-link {% if request.endpoint == 'problems' %}active{% endif %}">โจทย์</a>
                 <a href="{{ url_for('dashboard') }}"
                     class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">Dashboard</a>
-                <span class="navbar-username">👤 {{ session['username'] }}</span>
+                <span class="navbar-username">{{ icon('user', 14) }} {{ session['username'] }}</span>
                 <a href="{{ url_for('logout') }}" class="btn-logout">ออกจากระบบ</a>
             </div>
             {% endif %}
